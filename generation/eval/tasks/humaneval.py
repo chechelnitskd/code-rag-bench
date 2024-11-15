@@ -113,6 +113,10 @@ class GeneralHumanEval(Task):
             index of doc in the dataset to which the generation belongs
             (not used for Humaneval-Task)
         """
+        code_block = extract_code_pieces(generation)
+        if code_block:
+            return code_block
+        
         if not new_tokens_only:  # for hf models
             full_prompt = self.get_prompt(self.dataset["test"][idx])
             generation = generation[len(full_prompt):]

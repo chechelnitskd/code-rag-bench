@@ -470,6 +470,7 @@ def get_function_name(question: str, lang: str):
     return func_name, func_prefix
 
 def extract_generation_code(output: str, question: str):
+    #change this to try catch for outer logic
     try:
         code_block: str = re.findall(f'```python\n(.*?)```', output, re.DOTALL | re.IGNORECASE)[0]
         func_name, func_prefix = get_function_name(question, lang="python")

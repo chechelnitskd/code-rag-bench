@@ -1,5 +1,6 @@
 import json
 import time
+import os
 import openai
 import tiktoken
 from tqdm import tqdm
@@ -13,6 +14,7 @@ from transformers import StoppingCriteria, StoppingCriteriaList
 from eval.utils import TokenizedDataset, complete_code
 
 from openai import OpenAI
+os.environ["OPENAI_API_KEY"] = "sk-lGKtWEDR48XYsTeRoq_-IA" 
 client = OpenAI()
 
 class EndOfFunctionCriteria(StoppingCriteria):
@@ -358,70 +360,3 @@ def litellm_generations(
     return intermediate_generations + processed_generations
 
 
-# %% Gemini Generations
-import os, json
-import google.generativeai as genai
-genai.configure(api_key=os.environ["API_KEY"])
-
-def gemini_generations(
-    task,
-    dataset,
-    model,
-    n_tasks,
-    args,
-    curr_sample_idx: int = 0,
-    save_every_k_tasks: int = -1,
-    intermediate_generations: Optional[List[Optional[List[Optional[str]]]]] = None,
-    intermediate_save_generations_path: Optional[str] = None,
-):
-    if args.load_generations_path:
-        # load generated code
-        with open(args.load_generations_path) as fp:
-            generations = json.load(fp)
-            print(
-                f"generations loaded, {n_tasks} selected from {len(generations)} with {len(generations[0])} candidates"
-            )
-            # if accelerator.is_main_process:
-        return generations[:n_tasks]
-    
-    model = genai.GenerativeModel(model) # "gemini-1.5-flash"
-    gen_kwargs = {
-        "max_output_tokens": args.max_length_generation,
-        "temperature": args.temperature,
-        "top_p": args.top_p,
-    }
-
-    def get_response(prompt: str, n_iters: int = 5, sleep: int = 30) -> list[str]:
-        prompt_tokens = gpt_tokenizer.encode(prompt)
-        prompt = gpt_tokenizer.decode(prompt_tokens[: args.max_length_input])
-        # response = model.generate_content(prompt, generation_config=gen_kwargs)
-        # return [c.content.parts[0].text for c in response.candidates]
-        i_iters = 0
-        response = ""
-        while i_iters < n_iters:
-            i_iters += 1
-            try:
-                response = model.generate_content(prompt, generation_config=gen_kwargs)
-                return [c.content.parts[0].text for c in response.candidates]
-            except:
-                time.sleep(i_iters * sleep)
-        return [response]
-
-    generations = []
-    for i in tqdm(range(args.limit_start + curr_sample_idx, n_tasks)):
-        i_prompt = task.get_prompt(doc=dataset[i])
-        i_resp = get_response(prompt=i_prompt) # list[str]
-        if not (isinstance(i_resp, list) and isinstance(i_resp[0], str)):
-            i_resp = [""]
-        assert json.dumps(i_resp)
-        generations.append(i_resp)
-    
-    processed_generations = []
-    for i, gs in enumerate(generations):
-        processed_gs = [
-            task.postprocess_generation(generation=g,idx=i,new_tokens_only=True) 
-            for g in gs
-        ]
-        processed_generations.append(processed_gs)
-
-    return intermediate_generations + processed_generations

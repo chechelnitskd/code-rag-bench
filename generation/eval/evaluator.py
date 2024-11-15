@@ -9,7 +9,7 @@ from typing import List
 from eval import tasks
 from eval.generation import (
     parallel_generations, openai_generations, 
-    gemini_generations, litellm_generations
+     litellm_generations
 )
 
 _WARNING = """

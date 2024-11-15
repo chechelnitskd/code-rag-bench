@@ -41,8 +41,8 @@ def parse_args():
     parser.add_argument(
         "--model_backend",
         type=str,
-        default="hf",
-        choices=["hf", "vllm", "api"],
+        default="vllm",
+        choices=["vllm"],
         help="Backend library to use for model inference",
     )
     parser.add_argument(
